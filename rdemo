@@ -1,0 +1,230 @@
+##Install R "shiny" package##
+install.packages("shiny")
+
+#Required R packages#
+library(shiny)
+library(lattice)
+library(latticeExtra)
+library(ggplot2)
+library(plyr)
+
+
+#inFile <- input$file1
+
+#if (is.null(inFile))
+#  return(NULL)
+
+#data<-read.csv(inFile$datapath, header=input$header, sep=input$sep, 
+#        quote=input$quote)
+
+##Import Input dataset##
+data <- read.csv("C:/Users/pk153230/Desktop/Theo_data.csv")
+
+
+##Sort as needed##
+data <- data[order(data$subj, data$dose, data$period, data$time), ]
+
+
+auc1 <- function(df1){
+  
+  myfunc1 <-function(x){
+    df0=x
+    df0$prevtime <- c(0,df0$time[-length(df0$time)])
+    df0$prevconc <- c(0,df0$conc[-length(df0$conc)])
+    xr <- which.max(df0$conc)
+    xmi <- which.min(df0$conc)
+    df0$auc_ref1<- ifelse(df0$time<=df0$time[xr],
+                          (df0$time -df0$prevtime)* (df0$conc+df0$prevconc)* 0.5,
+                          (df0$time-df0$prevtime)*(df0$prevconc- df0$conc)/(log(df0$prevconc/df0$conc)))
+    
+    auc_ref<-round(sum(df0$auc_ref1),2)
+    df0$AUCt <- auc_ref
+    df0$Tmax <- df0$time[xr]
+    df0$Cmax <- df0$conc[xr]
+    df0$Clast <- df0$conc[nrow(df0)]
+    df0$Cmin <- df0$conc[xmi]
+    df0$prevtime <- NULL
+    df0$prevconc <- NULL
+    df0$auc_ref1 <- NULL
+    return(df0)
+  }   
+  df2= ddply(df1, "subj",myfunc1)
+  
+  return(df2)
+}
+
+
+
+myfunc2 <- function(y){
+  df3= y[y$conc>0,]
+  n_lambda <- 0
+  r.adj <- 0
+  
+  for (i in (nrow(df3)-2):1){
+    
+    # all
+    r <- r.adj - summary(lm(log(conc) ~ time, df3[i:nrow(df3),]))$adj.r.squared
+    if (is.nan(r) == TRUE) {
+      #NAToUnknown(x = ke, unknown = 0)
+      
+      cat("Warning: data points used for log-linear regression may include Cmax \n")
+      cat("         or may have error in estimation of lambda_z. \n")
+    }
+    else {
+      if (r < (1e-04)) {
+        n_lambda <- nrow(df3) - i + 1
+        r.adj <- summary(lm(log(conc) ~ time, df3[i:nrow(df3),]))$adj.r.squared
+      }
+    }
+  }
+  Lm1 <- lm(log(conc) ~ time, df3[(nrow(df3) -n_lambda + 1):nrow(df3), ])
+  df3$ke <- (-coef(Lm1)[2])
+  df3$Thalf <- round(log(2)/(-coef(Lm1)[2]),3)
+  df3$inter <- (-coef(Lm1)[1])
+  df3$R_sq <- summary(Lm1)$r.sq
+  df3$AR_sq <- summary(Lm1)$adj.r.squared
+  df3$Npoints <- n_lambda
+  df3$AUCextra <-df3$Clast/df3$ke
+  df3$AUCINF <- df3$AUCt+df3$AUCextra
+  df3$CL <- df3$dose*1000/df3$AUCINF
+  df3$VD <- df3$CL/df3$ke
+  df3 = df3[!duplicated(df3$subj), ]
+  
+  
+  return(df3)
+}
+
+pk1 <- data
+head(data)
+data$conc = as.numeric(as.character(data$conc))
+
+
+pk1a=data[complete.cases(data$conc),]
+head(pk1a)
+nca1 <- auc1(pk1a)
+
+head(nca1)
+nrow(nca1)
+nca2 = ddply(nca1,"subj", myfunc2)
+head(nca2)
+tnca <- subset(nca2 , nca2$subj == 1 & nca2$dose == 100 &nca2$period == 1)
+nrow(tnca)
+df <- subset(tnca, select = -c(subj,time,conc,dose,period) )
+t1nca<-t(df)
+
+
+
+
+##Convert variables to drill down into character format##
+
+SUBJID<-as.numeric(unique(data$subj))
+DOSE<-as.character(unique(data$dose))
+PERIOD<-as.character(unique(data$period))
+
+#plotcum <- function(data){
+data1<-data
+data1$logconc<-log(data1$conc)
+sub<-data.frame(unique(data1$subj))
+nsub<-nrow(sub)/2
+p1 = xyplot(data1$conc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
+            xlab = 'Time in Hours',
+            ylab="Concentration in ng/mL",
+            main="Cumulative Concentration Vs time (lin-lin)",scales = list(tck = c(1,0)))
+
+p2 =xyplot(data1$logconc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
+           xlab = 'Time in Hours',log="y",
+           ylab="Concentration in ng/mL",
+           main="Cumulative Concentration Vs time (log-lin)",
+           scales=list(tck = c(1,0),yscale.components=yscale.components.log10ticks,
+                       ymin=0,ymax=100,auto.key=list(space="top", columns=nsub,title="SUBJID",cex.title=0.45)))
+
+print(p1, position = c(0, 0, 0.5, 1), more = TRUE)
+print(p2, position = c(0.5, 0, 1, 1))
+
+#return(plotcum)}
+
+
+plotind <- function(SUBJID,DOSE,PERIOD){
+  DATA1 <- subset(data , data$subj == SUBJID & data$dose==DOSE & data$period==PERIOD)
+  DATA1$logconc<-log(DATA1$conc)
+  q1 = xyplot(DATA1$conc~DATA1$time,type=c('l','p'), data=DATA1,groups= DATA1$subj,
+              xlab = 'Time in Hours',
+              ylab="Concentration in ng/mL",
+              main="Individual Concentration Vs time (lin-lin)",scales = list(tck = c(1,0)))
+  
+  q2 =xyplot(DATA1$logconc~DATA1$time,type=c('l','p'), data=DATA1,groups= DATA1$subj,
+             xlab = 'Time in Hours',log="y",
+             ylab="Concentration in ng/mL",
+             main="Individual Concentration Vs time (log-lin)",scales=list(tck = c(1,0),y=list(log=10)),yscale.components=yscale.components.log10ticks)
+  print(q1, position = c(0, 0, 0.5, 1), more = TRUE)
+  print(q2, position = c(0.5, 0, 1, 1))
+  return(plotind)}
+
+##Server.R##
+
+server <- function(input, output) {
+  
+  #cumplot<-reactive({
+  # plotcum(input$data) 
+  #})
+  output$plotcum <- renderPlot({
+    #print(indplot())
+    print(p1, position = c(0, 0, 0.5, 1), more = TRUE)
+    print(p2, position = c(0.5, 0, 1, 1))
+    
+  })
+  indplot<-reactive({
+    plotind(input$SUBJID,input$DOSE, input$PERIOD) 
+  }) 
+  output$plotind <- renderPlot({
+    print(indplot())
+  })
+  
+}
+
+##Run Shinyapp to output##
+
+ui <- fluidPage(
+  titlePanel("GSK-Sample_NCA"),
+  sidebarLayout( 
+    sidebarPanel(
+      fileInput('file1', 'Choose CSV File',
+                accept=c('text/csv', 
+                         'text/comma-separated-values,text/plain', 
+                         '.csv')),
+      tags$hr(),
+      checkboxInput('header', 'Header', TRUE),
+      radioButtons('sep', 'Separator',
+                   c(Comma=',',
+                     Tab='\t'),
+                   ','),
+      selectInput(
+        "TYPE", "Output Type",
+        c("Individual",
+          "Cumulative")),
+      
+      # Only show this panel if the plot type is a histogram
+      conditionalPanel(
+        condition = "input.TYPE == 'Individual'",
+        selectInput("SUBJID" , "SUBJID:",  choices = SUBJID),
+        selectInput("DOSE"   , "DOSE:"  ,  choices = DOSE),
+        selectInput("PERIOD" , "PERIOD:",  choices = PERIOD)
+        
+      )
+      
+    ),mainPanel(
+      conditionalPanel(
+        condition= "input.TYPE == 'Individual'",
+        plotOutput("plotind")
+        #tabsetPanel(
+        #  tabPanel(textOutput("This is conditionalPanel B1")))
+      ),
+      conditionalPanel(
+        condition= "input.TYPE == 'Cumulative'",
+        plotOutput("plotcum"))
+    )
+    # mainPanel(  plotOutput("plotind"), plotOutput("plotcum") )
+  )
+)
+
+shinyApp(ui = ui, server = server)
