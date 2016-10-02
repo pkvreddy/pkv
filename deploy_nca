@@ -1,0 +1,86 @@
+
+##Install R "shiny" package##
+
+install.packages("shiny")
+
+#Required R packages#
+
+library(shiny)
+library(lattice)
+library(latticeExtra)
+
+setwd("C:/Users/pk153230/Desktop/")
+data <- read.csv("./R/app/Theo_data.csv")
+
+
+##Sort as needed##
+data <- data[order(data$subj, data$dose, data$period, data$time), ]
+
+##Convert variables to drill down into character format##
+
+SUBJID<-as.numeric(unique(data$subj))
+DOSE<-as.character(unique(data$dose))
+PERIOD<-as.character(unique(data$period))
+
+#plotcum <- function(data){
+data1<-data
+data1$logconc<-log(data1$conc)
+sub<-data.frame(unique(data1$subj))
+nsub<-nrow(sub)/2
+p1 = xyplot(data1$conc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
+            xlab = 'Time in Hours',
+            ylab="Concentration in ng/mL",
+            main="Cumulative Concentration Vs time (lin-lin)",scales = list(tck = c(1,0)))
+
+p2 =xyplot(data1$logconc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
+           xlab = 'Time in Hours',log="y",
+           ylab="Concentration in ng/mL",
+           main="Cumulative Concentration Vs time (log-lin)",
+           scales=list(tck = c(1,0),yscale.components=yscale.components.log10ticks,
+                       ymin=0,ymax=100,auto.key=list(space="top", columns=nsub,title="SUBJID",cex.title=0.45)))
+
+print(p1, position = c(0, 0, 0.5, 1), more = TRUE)
+print(p2, position = c(0.5, 0, 1, 1))
+
+#return(plotcum)}
+
+
+plotind <- function(SUBJID,DOSE,PERIOD){
+  DATA1 <- subset(data , data$subj == SUBJID & data$dose==DOSE & data$period==PERIOD)
+  DATA1$logconc<-log(DATA1$conc)
+  q1 = xyplot(DATA1$conc~DATA1$time,type=c('l','p'), data=DATA1,groups= DATA1$subj,
+              xlab = 'Time in Hours',
+              ylab="Concentration in ng/mL",
+              main="Individual Concentration Vs time (lin-lin)",scales = list(tck = c(1,0)))
+  
+  q2 =xyplot(DATA1$logconc~DATA1$time,type=c('l','p'), data=DATA1,groups= DATA1$subj,
+             xlab = 'Time in Hours',log="y",
+             ylab="Concentration in ng/mL",
+             main="Individual Concentration Vs time (log-lin)",scales=list(tck = c(1,0),y=list(log=10)),yscale.components=yscale.components.log10ticks)
+  print(q1, position = c(0, 0, 0.5, 1), more = TRUE)
+  print(q2, position = c(0.5, 0, 1, 1))
+  return(plotind)}
+
+setwd("C:/Users/pk153230/Desktop/R/app")
+runApp()
+install.packages('rsconnect')
+
+library(rsconnect)
+rsconnect::setAccountInfo(name='pkvreddy', token='922729731B3BB8533FEBB92578A544E7',
+                          secret='jzg0kvTXApBh9TH48Mz0BsfDfSpbX1Q/UV0PzhWG')
+rsconnect::deployApp('C:/Users/pk153230/Desktop/R/app')
+install.packages("devtools")
+library(devtools)
+install.packages("installr")
+library(installr)
+install.Rtools(choose_version = FALSE, check = TRUE, use_GUI = TRUE,
+               page_with_download_url =
+                 "http://cran.r-project.org/bin/windows/Rtools/, 
+               keep_install_file=TRUE")
+devtools::install_github('rstudio/shinyapps')
+shinyapps::deployApp("C:\\Users\\pk153230\\Desktop\\R\\app")
+shinyapps::deployApp('C:/Users/pk153230/Desktop/R/app')
+setwd('path/to/your/app')
+
+  
+  deployApp('C:/Users/pk153230/Desktop/R/app')
