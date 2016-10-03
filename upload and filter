@@ -1,8 +1,6 @@
 
 library(shiny)
-data1<-function(SUBJID,DOSE,PERIOD){
-  data<- subset(df , df$subj == SUBJID & df$dose==DOSE & df$period==PERIOD)
-}
+
 server <- function(input, output) {
   con<-reactive({
     inFile <- input$file1
@@ -42,8 +40,8 @@ server <- function(input, output) {
   })
   
   output$contents <- renderTable({
-    df <-con()
-    print(data1(input$SUBJID,input$DOSE,input$PERIOD))
+    data <-con()
+    data <- subset(data , data$subj == input$SUBJID & data$dose==input$DOSE & data$period==input$PERIOD)
   })
 }
 
