@@ -1,0 +1,80 @@
+
+library(shiny)
+data1<-function(SUBJID,DOSE,PERIOD){
+  data<- subset(df , df$subj == SUBJID & df$dose==DOSE & df$period==PERIOD)
+}
+server <- function(input, output) {
+  con<-reactive({
+    inFile <- input$file1
+    if (is.null(inFile))
+      return(NULL)
+    read.csv(inFile$datapath, header=input$header, sep=input$sep, 
+                   quote=input$quote)
+    
+    #df<-subset(data , data$subj == input$SUBJID & data$dose==input$DOSE & data$period==input$PERIOD)
+    #print(df)
+  }) 
+
+ 
+  output$subj <- renderUI({
+    df <-con()
+    if (is.null(df)) return(NULL)
+    
+    SUBJID<-unique(df$subj)
+    selectInput("SUBJID", "SUBJID:",SUBJID)
+    
+  })
+  output$dose <- renderUI({
+    df <-con()
+    if (is.null(df)) return(NULL)
+    
+    DOSE<-unique(df$dose)
+    selectInput("DOSE", "DOSE:",DOSE)
+    
+  })
+  output$period <- renderUI({
+    df <-con()
+    if (is.null(df)) return(NULL)
+    
+    PERIOD<-unique(df$period)
+    selectInput("PERIOD", "PERIOD:",PERIOD)
+    
+  })
+  
+  output$contents <- renderTable({
+    df <-con()
+    print(data1(input$SUBJID,input$DOSE,input$PERIOD))
+  })
+}
+
+ui <- fluidPage(
+  titlePanel("GSK-TEST"),
+  sidebarLayout(
+    sidebarPanel(
+      fileInput('file1', 'Choose CSV File',
+                accept=c('text/csv', 
+                         'text/comma-separated-values,text/plain', 
+                         '.csv')),
+      #selectInput("SUBJID" , "SUBJID:",  choices = c(1,2,3,4,5,6,7,8,9,10,11,12,13)),
+      uiOutput("subj"),
+      uiOutput("dose"),
+      uiOutput("period"),
+      
+      #selectInput("DOSE"   , "DOSE:"  ,  choices = c(100,200)),
+      #selectInput("PERIOD" , "PERIOD:",  choices = c(1,2)),
+      tags$hr(),
+      checkboxInput('header', 'Header', TRUE),
+      radioButtons('sep', 'Separator',
+                   c(Comma=',',
+                     Tab='\t'),
+                   ',')
+    ),
+    mainPanel(
+      tableOutput('contents')
+    )
+  )
+)
+
+##Run Shinyapp to output##
+
+shinyApp(ui = ui, server = server)
