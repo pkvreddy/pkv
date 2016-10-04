@@ -212,10 +212,11 @@ server <- function(input, output) {
     
   })
   
-  #ALL SUBJECTS PLOTS#
+   #ALL SUBJECTS PLOTS#
   
   output$plotcum <- renderPlot({
-    data1<-con()
+    data<-con()
+    data1 <- subset(data ,data$dose==input$DOSE & data$period==input$PERIOD)
     data1$logconc<-log(data1$conc)
     sub<-data.frame(unique(data1$subj))
     nsub<-nrow(sub)/2
@@ -237,7 +238,7 @@ server <- function(input, output) {
   
 }
 
-#Ui.R#
+#Ui.R##uiOutput("subj"), 
 ui <- fluidPage(
   titlePanel("GSK-TEST"),
   sidebarLayout(
@@ -249,13 +250,11 @@ ui <- fluidPage(
       tags$hr(),
       checkboxInput('header', 'Header', TRUE),
       radioButtons('sep', 'Separator',c(Comma=',',Tab='\t'),','),
-      selectInput( "TYPE", "Output Type", c("Individual","All Subjects")),
-      conditionalPanel(condition = "input.TYPE == 'Individual'",
-                       uiOutput("subj"),
-                       uiOutput("dose"),
-                       uiOutput("period")
-                       
-      )),mainPanel(
+      selectInput( "TYPE", "Output Type", c("Individual","All Subjects")), uiOutput("dose"), uiOutput("period"),
+
+      conditionalPanel(condition = "input.TYPE == 'Individual'",uiOutput("subj"))
+     
+      ),mainPanel(
         
         conditionalPanel(condition= "input.TYPE == 'Individual'",plotOutput("plotind"),tableOutput("contents")),
         
