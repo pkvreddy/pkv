@@ -1,0 +1,79 @@
+---
+title: "GSK-Confidential"
+output: pdf_document
+code_folding: hide
+classoption: potrait
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(lattice)
+library(latticeExtra)
+#data<-con()
+data<-read.csv("C:/Users/pk153230/Desktop/Theo_data.csv")
+data1 <- data[order(data$subj, data$dose, data$period, data$time), ]
+plotfile<-function(data1){
+  data1$logconc<-log(data1$conc)
+  sub<-data.frame(unique(data1$subj))
+  dos<-data.frame(unique(data1$dose))
+  per<-data.frame(unique(data1$period))
+  nsub<-nrow(sub)/2
+  
+  p1 = xyplot(data1$conc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
+              xlab = 'Time in Hours',
+              ylab="Concentration in ng/mL",
+              main=paste("DOSE=",dos,"    PERIOD=",per,"\n",
+                         "All Subjects Concentration Vs time \n (lin-lin)",sep=""),scales = list(tck = c(1,0)))
+  
+  p2 =xyplot(data1$logconc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
+             xlab = 'Time in Hours',log="y",
+             ylab="Concentration in ng/mL",
+             main=" \n \n                 (log-lin)",
+             scales=list(tck = c(1,0),yscale.components=yscale.components.log10ticks,
+                         ymin=0,ymax=100,auto.key=list(space="top", columns=nsub,title="SUBJID",cex.title=0.45)))
+  print(p1, position = c(0, 0, 0.5, 1), more = TRUE)
+  print(p2, position = c(0.5, 0, 1, 1))
+  return(plotfile)
+}
+plotfind<-function(data1){
+  data1$logconc<-log(data1$conc)
+  sub<-data.frame(unique(data1$subj))
+  dos<-data.frame(unique(data1$dose))
+  per<-data.frame(unique(data1$period))
+  nsub<-nrow(sub)/2
+  
+  q1 = xyplot(data1$conc~data1$time,type=c('l','p'),data=data1,
+              xlab = 'Time in Hours',
+              ylab="Concentration in ng/mL",
+              main=paste("SUBJID=",sub,"    DOSE=",dos,"    PERIOD=",per,"\n",
+                         "Individual Concentration Vs time \n (lin-lin)",sep=""),scales = list(tck = c(1,0)))
+  
+  q2 =xyplot(data1$logconc~data1$time,type=c('l','p'),data=data1,
+             xlab = 'Time in Hours',log="y",
+             ylab="Concentration in ng/mL",
+             main=" \n \n                 (log-lin)",
+             scales=list(tck = c(1,0),yscale.components=yscale.components.log10ticks,
+                         ymin=0,ymax=100,auto.key=list(space="top", columns=nsub,title="SUBJID",cex.title=0.45)))
+  print(q1, position = c(0, 0, 0.5, 1), more = TRUE)
+  print(q2, position = c(0.5, 0, 1, 1))
+  return(plotfind)
+}
+
+sub<-data.frame(unique(data1$subj))
+dos<-data.frame(unique(data1$dose))
+per<-data.frame(unique(data1$period))
+cum1<-split(data1, paste(data1$dos,data1$per))
+ind1<-split(data1, paste(data1$subj,data1$dos,data1$per))
+names(cum1)
+names(ind1)
+#out<-function(data1){
+#print(lapply(cum1,plotfile),lapply(ind1,plotfind)) }
+```
+
+```{r data1, echo=FALSE}
+#out(data1)        
+
+lapply(cum1,plotfile)
+lapply(ind1,plotfind)
+       
+```
+
