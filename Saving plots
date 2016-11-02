@@ -1,4 +1,5 @@
 #For server.R
+#*Sample code to understand the function*#
 
 library(ggplot2)
 server <-function(input, output) {
