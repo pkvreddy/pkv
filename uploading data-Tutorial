@@ -1,3 +1,5 @@
+# Sample tutorial to upload data and use it within your code
+
 library(shiny)
 
 server <- function(input, output) {
