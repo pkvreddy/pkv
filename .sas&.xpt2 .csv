@@ -1,0 +1,61 @@
+############################
+#Install Required packages #
+############################
+
+install.packages("shiny")
+install.packages("haven")
+install.packages("foreign")
+library(shiny)
+library(haven)
+library(foreign)
+
+#########################
+#      server.R         #
+#########################
+
+server <- function(input, output) {
+   #Input the uploaded file to a reactive function#
+  con<-reactive({
+    inFile <- input$file1
+    if (is.null(inFile))
+      return(NULL)
+    substrRight <- function(inFile, n){
+      substr(inFile, nchar(inFile)-n+1, nchar(inFile))
+    }
+    
+    type= substrRight(input$file1, 4)
+    if(type==".xpt")
+    {read.xport(inFile$datapath)}
+    else {read_sas(inFile$datapath, catalog_file = NULL, encoding = NULL)}
+  }) 
+  #Input the contents as a table to visualize#
+   df <- reactive({data <-con()})
+  output$contents <- renderTable({
+    data <-con()
+  })
+  #Download data#
+    output$downloadData <- downloadHandler(
+    filename = function() { paste("data", '.csv', sep='') },
+    content = function(file) {
+      write.csv(df(), file)
+    })
+  }
+  
+#########################
+#          ui.R         #
+#########################
+
+ui <- fluidPage(
+  titlePanel("Convert .sas/.xpt to .csv file"),
+  sidebarLayout(
+    sidebarPanel(
+      fileInput('file1', 'Choose .sas or .xpt File',
+                accept=c( '.sas7bdat','.sas','.xpt')),
+      
+      tags$hr(),
+      downloadButton('downloadData', 'Download.csv')
+      
+    ),mainPanel( tableOutput("contents"))
+  ))
+  
+shinyApp(ui = ui, server = server)
