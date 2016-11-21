@@ -1,0 +1,101 @@
+library(shiny)
+ui <- fluidPage(
+  titlePanel("Dose Vs PLT Vs Time"),
+  sidebarLayout(
+    sidebarPanel(
+      fileInput('file1', 'Choose CSV File',
+                accept=c('text/csv','text/comma-separated-values,text/plain', '.csv')),
+      
+      
+      tags$hr(),
+     # checkboxInput('header', 'Header', TRUE),
+      #radioButtons('sep', 'Separator',c(Comma=',',Tab='\t'),','), 
+      uiOutput("ID")),
+    mainPanel(
+       plotOutput("plotind", height=300,click = "plot_click"),
+       h4("Data points"),
+       tableOutput("plot_clickedpoints1")
+    ))
+)
+server <-function(input, output, session) {
+  con<-reactive({
+    inFile <- input$file1
+    if (is.null(inFile))
+      return(NULL)
+    read.csv(inFile$datapath)
+    
+  }) 
+ 
+  output$ID <- renderUI({
+    df <-con()
+    if (is.null(df)) return(NULL)
+    ID<-unique(df$ID)
+    selectInput("ID", "ID:",ID)})
+  
+  
+  output$plotind <- renderPlot({
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print(NULL) }
+    else if (is.null(inFile)==FALSE) {
+      transparent_theme <- theme(
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        axis.line = element_blank(),
+        panel.background = element_rect(fill = "transparent",colour = NA),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+      #Create the graphs :
+      data2<-read.csv(inFile$datapath) 
+      data_ <- subset(data2 , DOSE!=-99)
+      data<-subset(data_ , EVID==1)
+      
+      dat1 <- subset(data, ID==input$ID)
+
+      newdata2 <- subset(data_ , EVID==0)
+      dat2 <- subset(newdata2, ID==input$ID)
+ 
+      library(ggplot2)
+      p0<-ggplot(dat2, aes(x=factor(dat2$day), y=dat2$PLT)) + geom_point() +
+        labs(x="Time in days (DAY)",y="Concentration of PLT in ng/L (PLT)") 
+      p1 <- p0 + theme_bw() +
+        theme(axis.line = element_line(colour = "black"),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank(),
+              legend.position = "none")  
+      p1 
+      
+      p2 <- ggplot(dat1, aes(x=factor(dat1$day), y=dat1$DOSE)) + geom_bar(stat = "identity", width=0.2)+
+        transparent_theme
+      p2_grob = ggplotGrob(p2)
+      
+      p1 + annotation_custom(grob = p2_grob)
+    }})
+  
+  con1<-reactive({
+    data2<-con()
+    
+    data_ <- subset(data2 , DOSE!=-99)
+    data<-subset(data_ , EVID==1)
+    
+    dat1 <- subset(data, ID==input$ID)
+
+    newdata2 <- subset(data_ , EVID==0)
+    dat2 <- subset(newdata2, ID==input$ID)
+    dat2
+  })
+  output$plot_clickedpoints1 <- renderTable({
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print(NULL) }
+    else if (is.null(inFile)==FALSE) {
+      res <- nearPoints(con1(), input$plot_click,"day","DOSE", )
+      if (nrow(res) == 0)
+        return()
+      res
+    }})
+
+}
+shinyApp(ui = ui, server = server)
