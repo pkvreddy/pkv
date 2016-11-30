@@ -1,3 +1,5 @@
+library(ggplot2)
+library(shiny)
 
 #server.R
 
@@ -41,64 +43,7 @@ server <- function(input, output) {
   
   
   
-  #Individual Plots#
   
-  output$plotind <- renderPlot({
-    library(lattice)
-    library(latticeExtra)
-    inFile <- input$file1
-    if (is.null(inFile)==TRUE) {print("   ")}
-    else if (is.null(inFile)==FALSE) {
-      
-      data<-read.csv(inFile$datapath)  
-      DATA1 <- subset(data , data$subj == input$SUBJID & data$dose==input$DOSE & data$period==input$PERIOD)
-      
-      DATA1$logconc<-log(DATA1$conc)
-      q1 = xyplot(DATA1$conc~DATA1$time,type=c('l','p'), data=DATA1,groups= DATA1$subj,
-                  xlab = 'Time in Hours',
-                  ylab="Concentration in ng/mL",
-                  main="Individual Concentration Vs time \n (lin-lin)",scales = list(tck = c(1,0)))
-      
-      q2 =xyplot(DATA1$logconc~DATA1$time,type=c('l','p'), data=DATA1,groups= DATA1$subj,
-                 xlab = 'Time in Hours',log="y",
-                 ylab="Concentration in ng/mL",
-                 main=" \n                  (log-lin)",scales=list(tck = c(1,0),y=list(log=10)),yscale.components=yscale.components.log10ticks)
-      print(q1, position = c(0, 0, 0.5, 1), more = TRUE)
-      print(q2, position = c(0.5, 0, 1, 1))
-    } 
-  })
-  
-  #ALL SUBJECTS PLOTS#
-  
-  output$plotcum <- renderPlot({
-    library(lattice)
-    library(latticeExtra)
-    inFile <- input$file1
-    if (is.null(inFile)==TRUE) {print("   ")}
-    else if (is.null(inFile)==FALSE) {
-      
-      data<-read.csv(inFile$datapath)  
-      data1 <- subset(data ,data$dose==input$DOSE & data$period==input$PERIOD)
-      data1$logconc<-log(data1$conc)
-      sub<-data.frame(unique(data1$subj))
-      nsub<-nrow(sub)/2
-      p1 = xyplot(data1$conc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
-                  xlab = 'Time in Hours',
-                  ylab="Concentration in ng/mL",
-                  main="All Subjects Concentration Vs time \n (lin-lin) ",
-                  scales = list(tck = c(1,0)))
-      
-      p2 =xyplot(data1$logconc~data1$time,type=c('l','p'),groups= data1$subj,data=data1,
-                 xlab = 'Time in Hours',log="y",
-                 ylab="Concentration in ng/mL",
-                 main=" \n                  (log-lin)",
-                 scales=list(tck = c(1,0),yscale.components=yscale.components.log10ticks,
-                             ymin=0,ymax=100,auto.key=list(space="top", columns=nsub,title="SUBJID",cex.title=0.45)))
-      
-      print(p1, position = c(0, 0, 0.5, 1), more = TRUE)
-      print(p2, position = c(0.5, 0, 1, 1))
-    }
-  })
   
   
   
@@ -375,31 +320,170 @@ server <- function(input, output) {
       print(dup)
     }
   })
+  #Individual Plots#
   
-  #Download NCA Cumulative Output in .csv format #
+  output$plotind1 <- renderPlot({
+    library(lattice)
+    library(latticeExtra)
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print("   ")}
+    else if (is.null(inFile)==FALSE) {
+      
+      data<-read.csv(inFile$datapath)  
+      DATA1 <- subset(data , data$subj == input$SUBJID & data$dose==input$DOSE & data$period==input$PERIOD)
+      
+      DATA1$logconc<-log(DATA1$conc)
+      library(ggplot2)
+      nsub<-nrow(sub)/2
+      p0<-ggplot(DATA1, aes(x=DATA1$time, y=DATA1$conc)) + geom_line() + geom_point() +
+        labs(x="Time in Hours",y="Concentration in ng/mL") 
+      q1 <- p0 + theme_bw() +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          legend.position = "none")+ labs(title = "Individual Concentration Vs time \n (lin-lin)") 
+      
+      q1
+    } 
+  })
   
-  output$downloadData <- downloadHandler(
-    filename = function() { paste("NCA_param_all", '.csv', sep='') },
-    content = function(file) {
-      write.csv(cumnca(), file)
+  output$plotind2 <- renderPlot({
+    library(lattice)
+    library(latticeExtra)
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print("   ")}
+    else if (is.null(inFile)==FALSE) {
+      
+      data<-read.csv(inFile$datapath)  
+      DATA1 <- subset(data , data$subj == input$SUBJID & data$dose==input$DOSE & data$period==input$PERIOD)
+      
+      DATA1$logconc<-log(DATA1$conc)
+      library(ggplot2)
+      nsub<-nrow(sub)/2
+      
+      
+      p01<-ggplot(DATA1, aes(x=DATA1$time, y=DATA1$logconc)) + geom_line() + geom_point() +
+        labs(x="Time in Hours",y="Log Concentration in ng/mL") 
+      q2 <- p01 + theme_bw() +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          legend.position = "none")  + labs(title = "\n                  (log-lin)")
+      q2
+    } 
+  })
+  
+  #ALL SUBJECTS PLOTS#
+  
+  output$plotcum1 <- renderPlot({
+    library(lattice)
+    library(latticeExtra)
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print("   ")}
+    else if (is.null(inFile)==FALSE) {
+      
+      data<-read.csv(inFile$datapath)  
+      data1 <- subset(data ,data$dose==input$DOSE & data$period==input$PERIOD)
+      data1$logconc<-log(data1$conc)
+      sub<-data.frame(unique(data1$subj))
+      nsub<-nrow(sub)/2
+      library(ggplot2)
+      nsub<-nrow(sub)/2
+      p00<-ggplot(data1, aes(x=data1$time, y=data1$conc,color=factor(data1$subj))) + geom_line() + geom_point() +
+        labs(x="Time in Hours",y="Concentration in ng/mL") 
+      p1 <- p00 + theme_bw() +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          legend.position = "none") + labs(title = "All Subjects Concentration Vs time \n (lin-lin)")
+      
+      p1
     }
-  )
-  
-  #Download Visulizations in PDF
-  output$report = downloadHandler(
+  })
+  output$plotcum2 <- renderPlot({
+    library(lattice)
+    library(latticeExtra)
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print("   ")}
+    else if (is.null(inFile)==FALSE) {
+      
+      data<-read.csv(inFile$datapath)  
+      DATA1 <- subset(data ,  data$dose==input$DOSE & data$period==input$PERIOD)
+      
+      DATA1$logconc<-log(DATA1$conc)
+      library(ggplot2)
+      nsub<-nrow(sub)/2
+      
+      
+      p011<-ggplot(DATA1, aes(x=DATA1$time, y=DATA1$logconc,color=factor(DATA1$subj))) + geom_line() + geom_point() +
+        labs(x="Time in Hours",y="Log Concentration in ng/mL") 
+      q2 <- p011 + theme_bw() +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          legend.position = "none")  + labs(title = "\n                  (log-lin)")
+      q2
+    } 
+  })
+  con1<-reactive({
     
-    filename = 'myreport.pdf',
-    content = function(file) {
-      data <-con()
-      #install.packages("rmarkdown")
-      library(rmarkdown)
-      library(evaluate)
-      library(pander)
-      out <- render('inppk.Rmd',pdf_document())
-      file.rename(out, file) 
-    },
-    contentType = 'application/pdf'
-  )
+    data<-con()
+    DATA1 <- subset(data , data$subj == input$SUBJID & data$dose==input$DOSE & data$period==input$PERIOD)
+    
+    DATA1$logconc<-log(DATA1$conc)
+    DATA1
+  }) 
+  output$plot_clickedpoints1 <- renderTable({
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print(NULL) }
+    else if (is.null(inFile)==FALSE) {
+      res <- nearPoints(con1(), input$plot_click1, "time","conc", )
+      if (nrow(res) == 0)
+        return()
+      res
+    }})
+  
+  output$plot_clickedpoints2 <- renderTable({
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print(NULL) }
+    else if (is.null(inFile)==FALSE) {
+      res <- nearPoints(con1(), input$plot_click2, "time","logconc", )
+      if (nrow(res) == 0)
+        return()
+      res
+    }}) 
+  con11<-reactive({
+    
+    data<-con()
+    DATA1 <- subset(data , data$dose==input$DOSE & data$period==input$PERIOD)
+    
+    DATA1$logconc<-log(DATA1$conc)
+    DATA1
+  }) 
+  
+  output$plot_clickedpoints11 <- renderTable({
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print(NULL) }
+    else if (is.null(inFile)==FALSE) {
+      res <- nearPoints(con11(), input$plot_click11, "time","conc", )
+      if (nrow(res) == 0)
+        return()
+      res
+    }})
+  
+  output$plot_clickedpoints22 <- renderTable({
+    inFile <- input$file1
+    if (is.null(inFile)==TRUE) {print(NULL) }
+    else if (is.null(inFile)==FALSE) {
+      res <- nearPoints(con11(), input$plot_click22, "time","logconc", )
+      if (nrow(res) == 0)
+        return()
+      res
+    }}) 
 }
 
 #Ui.R
@@ -424,11 +508,22 @@ ui <- fluidPage(
       
     ),mainPanel(
       
-      conditionalPanel(condition= "input.TYPE == 'Individual'",plotOutput("plotind"),tableOutput("contents")),
-      
-      conditionalPanel(condition= "input.TYPE == 'All Subjects'",plotOutput("plotcum"),tableOutput("contents2"))
-       )
+      conditionalPanel(condition= "input.TYPE == 'Individual'",
+                       splitLayout(cellWidths = c("45%", "45%"),
+                                   plotOutput("plotind1", height=300,click = "plot_click1"),
+                                   plotOutput("plotind2", height=300,click = "plot_click2")),
+                       #h4("Data points"),
+                       tableOutput("plot_clickedpoints1"),tableOutput("plot_clickedpoints2"),tableOutput("contents")
+      ),
+      conditionalPanel(condition= "input.TYPE == 'All Subjects'",
+                       splitLayout(cellWidths = c("45%", "45%"),
+                                   plotOutput("plotcum1", height=300,click = "plot_click11"),
+                                   plotOutput("plotcum2", height=300,click = "plot_click22")),
+                       #h4("Data points"),
+                       tableOutput("plot_clickedpoints11"),tableOutput("plot_clickedpoints22"),tableOutput("contents2")
+      ))
   ))
+
 
 
 shinyApp(ui = ui, server = server)
