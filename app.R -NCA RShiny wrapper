@@ -484,6 +484,30 @@ server <- function(input, output) {
         return()
       res
     }}) 
+    #Download NCA Cumulative Output in .csv format #
+  
+  output$downloadData <- downloadHandler(
+    filename = function() { paste("NCA_param_all", '.csv', sep='') },
+    content = function(file) {
+      write.csv(cumnca(), file)
+    }
+  )
+  
+  #Download Visulizations in PDF
+  output$report = downloadHandler(
+    
+    filename = 'myreport.pdf',
+    content = function(file) {
+      data <-con()
+      #install.packages("rmarkdown")
+      library(rmarkdown)
+      library(evaluate)
+      library(pander)
+      out <- render('inppk.Rmd',pdf_document())
+      file.rename(out, file) 
+    },
+    contentType = 'application/pdf'
+  )
 }
 
 #Ui.R
