@@ -2,19 +2,17 @@
 #Install Required packages #
 ############################
 
-install.packages("shiny")
-install.packages("haven")
-install.packages("foreign")
 library(shiny)
 library(haven)
 library(foreign)
+library(DT)
 
 #########################
 #      server.R         #
 #########################
 
 server <- function(input, output) {
-   #Input the uploaded file to a reactive function#
+  #Input the uploaded file to a reactive function#
   con<-reactive({
     inFile <- input$file1
     if (is.null(inFile))
@@ -28,19 +26,20 @@ server <- function(input, output) {
     {read.xport(inFile$datapath)}
     else {read_sas(inFile$datapath, catalog_file = NULL, encoding = NULL)}
   }) 
+  
   #Input the contents as a table to visualize#
-   df <- reactive({data <-con()})
-  output$contents <- renderTable({
-    data <-con()
-  })
+  df <- reactive({data <-con()})
+  
+  output$contents <- DT::renderDataTable( con(),filter = 'top')
+  
   #Download data#
-    output$downloadData <- downloadHandler(
+  output$downloadData <- downloadHandler(
     filename = function() { paste("data", '.csv', sep='') },
     content = function(file) {
       write.csv(df(), file)
     })
-  }
-  
+}
+
 #########################
 #          ui.R         #
 #########################
@@ -55,7 +54,8 @@ ui <- fluidPage(
       tags$hr(),
       downloadButton('downloadData', 'Download.csv')
       
-    ),mainPanel( tableOutput("contents"))
+    ),mainPanel( DT::dataTableOutput("contents"))
   ))
-  
+
 shinyApp(ui = ui, server = server)
+
