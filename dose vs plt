@@ -58,7 +58,7 @@ server <-function(input, output, session) {
       dat2 <- subset(newdata2, ID==input$ID)
  
       library(ggplot2)
-      p0<-ggplot(dat2, aes(x=factor(dat2$day), y=dat2$PLT)) + geom_point() +
+      p0<-ggplot(dat2, aes(x=factor(dat2$DAY), y=dat2$PLT)) + geom_point() +
         labs(x="Time in days (DAY)",y="Concentration of PLT in ng/L (PLT)") 
       p1 <- p0 + theme_bw() +
         theme(axis.line = element_line(colour = "black"),
@@ -68,7 +68,7 @@ server <-function(input, output, session) {
               legend.position = "none")  
       p1 
       
-      p2 <- ggplot(dat1, aes(x=factor(dat1$day), y=dat1$DOSE)) + geom_bar(stat = "identity", width=0.2)+
+      p2 <- ggplot(dat1, aes(x=factor(dat1$DAY), y=dat1$DOSE)) + geom_bar(stat = "identity", width=0.2)+
         transparent_theme
       p2_grob = ggplotGrob(p2)
       
