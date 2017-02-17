@@ -30,6 +30,7 @@ server <- function(input, output) {
   #Input the contents as a table to visualize#
   df <- reactive({data <-con()})
   
+  #Additional advantage of DT package is that you can filter for text and for values#
   output$contents <- DT::renderDataTable( con(),filter = 'top')
   
   #Download data#
