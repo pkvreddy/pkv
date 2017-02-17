@@ -2,17 +2,17 @@
 ##Install R "shiny" package##
 install.packages("rsconnect")
 
-#Required R packages#
+#Install required R packages#
 setwd("path where app is stored")
 
+#Run shiny app#
 shiny::runApp()
 
+#Invoke "rsconnect" package#
 library(rsconnect)
 
-#After creating an account at Shinyapps.io, you will have the below information in the tokens section of the account
-
-rsconnect::setAccountInfo(name='ID',
-                          token='TOKEN',
-                          secret='SECRET')
-                     
+#After creating an account at Shinyapps.io, you will have the below information in the tokens section of the account#
+rsconnect::setAccountInfo(name='ID',token='TOKEN',secret='SECRET')
+                          
+#Deploy app finally#                     
 rsconnect::deployApp()
